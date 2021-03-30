@@ -1,3 +1,3 @@
-vos_utils>=0.0.8a2
+ovos_utils>=0.0.8a2
 youtube-dl
 pafy
