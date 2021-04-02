@@ -3,10 +3,11 @@ from os.path import join, dirname
 from adapt.intent import IntentBuilder
 from mycroft.skills.core import intent_handler
 from mycroft.messagebus.message import Message
-from ovos_utils.waiting_for_mycroft.base_skill import MycroftSkill
-from ovos_utils.playback import CPSMatchType, CPSPlayback, CPSMatchConfidence, \
-    BetterCommonPlayInterface, CPSTrackStatus
-from ovos_utils.playback.youtube import is_youtube, get_youtube_metadata, \
+from ovos_workshop.skills import OVOSSkill
+from ovos_workshop.frameworks.cps import CPSMatchType, CPSPlayback, \
+    CPSMatchConfidence, BetterCommonPlayInterface, CPSTrackStatus
+from ovos_workshop.frameworks.cps.youtube import is_youtube, \
+    get_youtube_metadata, \
     get_youtube_video_stream
 from ovos_utils.gui import is_gui_connected, GUIInterface
 from ovos_utils.json_helper import merge_dict
@@ -14,7 +15,7 @@ from ovos_utils.log import LOG
 from pprint import pprint
 
 
-class BetterPlaybackControlSkill(MycroftSkill):
+class BetterPlaybackControlSkill(OVOSSkill):
 
     def initialize(self):
         # TODO skill settings for these values
@@ -218,7 +219,8 @@ class BetterPlaybackControlSkill(MycroftSkill):
             return
 
         best = self.select_best(results)
-
+        best["uri"] = "http://tsfdirecto.tsf.pt/tsfdirecto.aac"
+        best["playback"] = CPSPlayback.GUI
         self.cps.process_search(best, results)
         self.enclosure.mouth_reset()
         self.set_context("Playing")
