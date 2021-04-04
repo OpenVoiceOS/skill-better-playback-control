@@ -219,8 +219,6 @@ class BetterPlaybackControlSkill(OVOSSkill):
             return
 
         best = self.select_best(results)
-        best["uri"] = "http://tsfdirecto.tsf.pt/tsfdirecto.aac"
-        best["playback"] = CPSPlayback.GUI
         self.cps.process_search(best, results)
         self.enclosure.mouth_reset()
         self.set_context("Playing")
