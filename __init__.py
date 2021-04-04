@@ -259,9 +259,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
         tracks = message.data["tracks"]
         self.set_context("Playing")
         # TODO cps.queue / playlist support
-        self.cps.update_playlist(tracks)
-        self.cps.update_search_results(tracks)
-        self.cps.play(tracks[0])
+        self.cps.process_search(tracks[0], tracks)
 
     def shutdown(self):
         self.cps.shutdown()
