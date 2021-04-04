@@ -1,4 +1,4 @@
-ovos_utils>=0.0.8
+ovos_utils>=0.0.9a1
 ovos_workshop>=0.0.1a3
 youtube-dl
 pafy
