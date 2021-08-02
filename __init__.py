@@ -4,9 +4,9 @@ from adapt.intent import IntentBuilder
 from mycroft.skills.core import intent_handler
 from mycroft.messagebus.message import Message
 from ovos_workshop.skills import OVOSSkill
-from ovos_workshop.frameworks.cps import CPSMatchType, CPSPlayback, \
-    CPSMatchConfidence, BetterCommonPlayInterface, CPSTrackStatus
-from ovos_workshop.frameworks.cps.youtube import is_youtube, \
+from ovos_workshop.frameworks.playback import CPSMatchType, CPSPlayback, \
+    CPSMatchConfidence, OVOSCommonPlaybackInterface, CPSTrackStatus
+from ovos_workshop.frameworks.playback.youtube import is_youtube, \
     get_youtube_metadata, \
     get_youtube_video_stream
 from ovos_utils.gui import is_gui_connected, GUIInterface
@@ -23,7 +23,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
         self.audio_only = False
         self.compatibility_mode = False
         self.media_type_fallback = True
-        self.cps = BetterCommonPlayInterface(
+        self.cps = OVOSCommonPlaybackInterface(
             bus=self.bus, backwards_compatibility=self.compatibility_mode,
             media_fallback=self.media_type_fallback,
             max_timeout=7, min_timeout=3)
