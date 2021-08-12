@@ -219,7 +219,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
             return
 
         best = self.select_best(results)
-        self.cps.process_search(best, results)
+        self.cps.play_media(best, results)
         self.enclosure.mouth_reset()
         self.set_context("Playing")
 
@@ -256,10 +256,16 @@ class BetterPlaybackControlSkill(OVOSSkill):
 
     # messagebus request to play track
     def handle_play_request(self, message):
-        tracks = message.data["tracks"]
         self.set_context("Playing")
-        # TODO cps.queue / playlist support
-        self.cps.process_search(tracks[0], tracks)
+        if message.data.get("tracks"):
+            # backwards compat / old style
+            playlist = disambiguation = message.data["tracks"]
+            media = playlist[0]
+        else:
+            media = message.data.get("media")
+            playlist = message.data.get("playlist") or [media]
+            disambiguation = message.data.get("disambiguation") or [media]
+        self.cps.play_media(media, disambiguation, playlist)
 
     def shutdown(self):
         self.cps.shutdown()
