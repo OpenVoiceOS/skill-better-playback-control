@@ -4,8 +4,8 @@ from adapt.intent import IntentBuilder
 from mycroft.skills.core import intent_handler
 from mycroft.messagebus.message import Message
 from ovos_workshop.skills import OVOSSkill
-from ovos_workshop.frameworks.playback import CPSMatchType, CPSPlayback, \
-    CPSMatchConfidence, OVOSCommonPlaybackInterface, CPSTrackStatus
+from ovos_workshop.frameworks.playback import CommonPlayMediaType, CommonPlayPlaybackType, \
+    CommonPlayMatchConfidence, OVOSCommonPlaybackInterface, CommonPlayStatus
 from ovos_workshop.frameworks.playback.youtube import is_youtube, \
     get_youtube_metadata, \
     get_youtube_video_stream
@@ -21,8 +21,10 @@ class BetterPlaybackControlSkill(OVOSSkill):
         # TODO skill settings for these values
         self.gui_only = False  # not recommended
         self.audio_only = False
-        self.compatibility_mode = False
-        self.media_type_fallback = True
+        self.compatibility_mode = True
+        self.media_type_fallback = True # if True send a Generic type query
+        # when specific query fails, eg "play the News" -> news media not
+        # found -> check other skills (youtube/iptv....)
         self.cps = OVOSCommonPlaybackInterface(
             bus=self.bus, backwards_compatibility=self.compatibility_mode,
             media_fallback=self.media_type_fallback,
@@ -38,122 +40,122 @@ class BetterPlaybackControlSkill(OVOSSkill):
     @intent_handler("play.intent")
     def generic_play(self, message):
         LOG.debug("Generic BetterCPS match")
-        self._play(message, CPSMatchType.GENERIC)
+        self._play(message, CommonPlayMediaType.GENERIC)
 
     @intent_handler("music.intent")
     def play_music(self, message):
         LOG.debug("Music BetterCPS match")
-        self._play(message, CPSMatchType.MUSIC)
+        self._play(message, CommonPlayMediaType.MUSIC)
 
     @intent_handler("video.intent")
     def play_video(self, message):
         LOG.debug("Video BetterCPS match")
-        self._play(message, CPSMatchType.VIDEO)
+        self._play(message, CommonPlayMediaType.VIDEO)
 
     @intent_handler("audio.intent")
     def play_audio(self, message):
         LOG.debug("Audio BetterCPS match")
         try:
-            self._play(message, CPSMatchType.AUDIO)
+            self._play(message, CommonPlayMediaType.AUDIO)
         except:
-            self._play(message, CPSMatchType.MUSIC)
+            self._play(message, CommonPlayMediaType.MUSIC)
 
     @intent_handler("audiobook.intent")
     def play_audiobook(self, message):
         LOG.debug("AudioBook BetterCPS match")
-        self._play(message, CPSMatchType.AUDIOBOOK)
+        self._play(message, CommonPlayMediaType.AUDIOBOOK)
 
     @intent_handler("radio_drama.intent")
     def play_radio_drama(self, message):
         LOG.debug("Radio Theatre BetterCPS match")
         # TODO new type in next ovos_utils alpha release
         try:
-            self._play(message, CPSMatchType.RADIO_THEATRE)
+            self._play(message, CommonPlayMediaType.RADIO_THEATRE)
         except:
-            self._play(message, CPSMatchType.AUDIOBOOK)
+            self._play(message, CommonPlayMediaType.AUDIOBOOK)
 
     @intent_handler("behind_scenes.intent")
     def play_behind_scenes(self, message):
         LOG.debug("Behind the Scenes BetterCPS match")
         # TODO new type in next ovos_utils alpha release
         try:
-            self._play(message, CPSMatchType.BEHIND_THE_SCENES)
+            self._play(message, CommonPlayMediaType.BEHIND_THE_SCENES)
         except:
-            self._play(message, CPSMatchType.VIDEO)
+            self._play(message, CommonPlayMediaType.VIDEO)
 
     @intent_handler("game.intent")
     def play_game(self, message):
         LOG.debug("Game BetterCPS match")
-        self._play(message, CPSMatchType.GAME)
+        self._play(message, CommonPlayMediaType.GAME)
 
     @intent_handler("radio.intent")
     def play_radio(self, message):
         LOG.debug("Radio BetterCPS match")
-        self._play(message, CPSMatchType.RADIO)
+        self._play(message, CommonPlayMediaType.RADIO)
 
     @intent_handler("podcast.intent")
     def play_podcast(self, message):
         LOG.debug("Podcast BetterCPS match")
-        self._play(message, CPSMatchType.PODCAST)
+        self._play(message, CommonPlayMediaType.PODCAST)
 
     @intent_handler("news.intent")
     def play_news(self, message):
         LOG.debug("News BetterCPS match")
-        self._play(message, CPSMatchType.NEWS)
+        self._play(message, CommonPlayMediaType.NEWS)
 
     @intent_handler("tv.intent")
     def play_tv(self, message):
         LOG.debug("TV BetterCPS match")
-        self._play(message, CPSMatchType.TV)
+        self._play(message, CommonPlayMediaType.TV)
 
     @intent_handler("movie.intent")
     def play_movie(self, message):
         LOG.debug("Movie BetterCPS match")
-        self._play(message, CPSMatchType.MOVIE)
+        self._play(message, CommonPlayMediaType.MOVIE)
 
     @intent_handler("short_movie.intent")
     def play_short_movie(self, message):
         LOG.debug("Short Movie BetterCPS match")
         try:
-            self._play(message, CPSMatchType.SHORT_FILM)
+            self._play(message, CommonPlayMediaType.SHORT_FILM)
         except:
-            self._play(message, CPSMatchType.MOVIE)
+            self._play(message, CommonPlayMediaType.MOVIE)
 
     @intent_handler("silent_movie.intent")
     def play_silent_movie(self, message):
         LOG.debug("Silent Movie BetterCPS match")
         try:
-            self._play(message, CPSMatchType.SILENT_MOVIE)
+            self._play(message, CommonPlayMediaType.SILENT_MOVIE)
         except:
-            self._play(message, CPSMatchType.MOVIE)
+            self._play(message, CommonPlayMediaType.MOVIE)
 
     @intent_handler("bw_movie.intent")
     def play_bw_movie(self, message):
         LOG.debug("Black&White Movie BetterCPS match")
         try:
-            self._play(message, CPSMatchType.BLACK_WHITE_MOVIE)
+            self._play(message, CommonPlayMediaType.BLACK_WHITE_MOVIE)
         except:
-            self._play(message, CPSMatchType.MOVIE)
+            self._play(message, CommonPlayMediaType.MOVIE)
 
     @intent_handler("movietrailer.intent")
     def play_trailer(self, message):
         LOG.debug("Trailer BetterCPS match")
-        self._play(message, CPSMatchType.TRAILER)
+        self._play(message, CommonPlayMediaType.TRAILER)
 
     @intent_handler("porn.intent")
     def play_adult(self, message):
         LOG.debug("Porn BetterCPS match")
-        self._play(message, CPSMatchType.ADULT)
+        self._play(message, CommonPlayMediaType.ADULT)
 
     @intent_handler("comic.intent")
     def play_comic(self, message):
         LOG.debug("ComicBook BetterCPS match")
-        self._play(message, CPSMatchType.VISUAL_STORY)
+        self._play(message, CommonPlayMediaType.VISUAL_STORY)
 
     @intent_handler("documentaries.intent")
     def play_documentaries(self, message):
         LOG.debug("Documentaries BetterCPS match")
-        self._play(message, CPSMatchType.DOCUMENTARY)
+        self._play(message, CommonPlayMediaType.DOCUMENTARY)
 
     # playback control intents
     @intent_handler(IntentBuilder('NextCommonPlay')
@@ -179,14 +181,14 @@ class BetterPlaybackControlSkill(OVOSSkill):
 
     # playback selection
     def should_resume(self, phrase):
-        if self.cps.playback_status == CPSTrackStatus.PAUSED:
+        if self.cps.playback_status == CommonPlayStatus.PAUSED:
             if not phrase.strip() or \
                     self.voc_match(phrase, "Resume", exact=True) or \
                     self.voc_match(phrase, "Play", exact=True):
                 return True
         return False
 
-    def _play(self, message, media_type=CPSMatchType.GENERIC):
+    def _play(self, message, media_type=CommonPlayMediaType.GENERIC):
         phrase = message.data.get("query", "")
         num = message.data.get("number", "")
         if num:
@@ -210,7 +212,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
         # filter GUI only results if GUI not connected
         gui_connected = is_gui_connected(self.bus)
         if self.audio_only or not gui_connected:
-            results = [r for r in results if r["playback"] != CPSPlayback.GUI]
+            results = [r for r in results if r["playback"] != CommonPlayPlaybackType.GUI]
 
         if not results:
             self.speak_dialog("cant.play",
@@ -244,7 +246,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
                 # WARNING this can effectively make it so that the same
                 # skill is always selected
                 gui_results = [r for r in ties if r["playback"] ==
-                               CPSPlayback.GUI]
+                               CommonPlayPlaybackType.GUI]
                 if len(gui_results):
                     selected = random.choice(gui_results)
 
