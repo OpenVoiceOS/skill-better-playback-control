@@ -28,7 +28,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
         self.media_type_fallback = True # if True send a Generic type query
         # when specific query fails, eg "play the News" -> news media not
         # found -> check other skills (youtube/iptv....)
-        if self.self.use_mycroft_gui:
+        if self.use_mycroft_gui:
             audio = AudioPlayerType.MYCROFT
             video = VideoPlayerType.MYCROFT
         else:
@@ -43,7 +43,10 @@ class BetterPlaybackControlSkill(OVOSSkill):
 
     def stop(self, message=None):
         # will stop any playback in VIDEO or AudioService
-        return self.common_play.stop()
+        try:
+            return self.common_play.stop()
+        except:
+            pass
 
     # play xxx intents
     @intent_handler("play.intent")
