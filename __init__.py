@@ -10,7 +10,7 @@ from ovos_workshop.frameworks.playback import CommonPlayMediaType, CommonPlayPla
 from ovos_workshop.frameworks.playback.youtube import is_youtube, \
     get_youtube_metadata, \
     get_youtube_video_stream
-from ovos_utils.gui import is_gui_connected, GUIInterface
+from ovos_utils.gui import is_gui_connected
 from ovos_utils.json_helper import merge_dict
 from ovos_utils.log import LOG
 from pprint import pprint
@@ -51,22 +51,22 @@ class BetterPlaybackControlSkill(OVOSSkill):
     # play xxx intents
     @intent_handler("play.intent")
     def generic_play(self, message):
-        LOG.debug("Generic BetterCPS match")
+        LOG.debug("Generic OVOSCommonPlay match")
         self._play(message, CommonPlayMediaType.GENERIC)
 
     @intent_handler("music.intent")
     def play_music(self, message):
-        LOG.debug("Music BetterCPS match")
+        LOG.debug("Music OVOSCommonPlay match")
         self._play(message, CommonPlayMediaType.MUSIC)
 
     @intent_handler("video.intent")
     def play_video(self, message):
-        LOG.debug("Video BetterCPS match")
+        LOG.debug("Video OVOSCommonPlay match")
         self._play(message, CommonPlayMediaType.VIDEO)
 
     @intent_handler("audio.intent")
     def play_audio(self, message):
-        LOG.debug("Audio BetterCPS match")
+        LOG.debug("Audio OVOSCommonPlay match")
         try:
             self._play(message, CommonPlayMediaType.AUDIO)
         except:
@@ -74,12 +74,12 @@ class BetterPlaybackControlSkill(OVOSSkill):
 
     @intent_handler("audiobook.intent")
     def play_audiobook(self, message):
-        LOG.debug("AudioBook BetterCPS match")
+        LOG.debug("AudioBook OVOSCommonPlay match")
         self._play(message, CommonPlayMediaType.AUDIOBOOK)
 
     @intent_handler("radio_drama.intent")
     def play_radio_drama(self, message):
-        LOG.debug("Radio Theatre BetterCPS match")
+        LOG.debug("Radio Theatre OVOSCommonPlay match")
         # TODO new type in next ovos_utils alpha release
         try:
             self._play(message, CommonPlayMediaType.RADIO_THEATRE)
@@ -88,7 +88,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
 
     @intent_handler("behind_scenes.intent")
     def play_behind_scenes(self, message):
-        LOG.debug("Behind the Scenes BetterCPS match")
+        LOG.debug("Behind the Scenes OVOSCommonPlay match")
         # TODO new type in next ovos_utils alpha release
         try:
             self._play(message, CommonPlayMediaType.BEHIND_THE_SCENES)
@@ -97,37 +97,37 @@ class BetterPlaybackControlSkill(OVOSSkill):
 
     @intent_handler("game.intent")
     def play_game(self, message):
-        LOG.debug("Game BetterCPS match")
+        LOG.debug("Game OVOSCommonPlay match")
         self._play(message, CommonPlayMediaType.GAME)
 
     @intent_handler("radio.intent")
     def play_radio(self, message):
-        LOG.debug("Radio BetterCPS match")
+        LOG.debug("Radio OVOSCommonPlay match")
         self._play(message, CommonPlayMediaType.RADIO)
 
     @intent_handler("podcast.intent")
     def play_podcast(self, message):
-        LOG.debug("Podcast BetterCPS match")
+        LOG.debug("Podcast OVOSCommonPlay match")
         self._play(message, CommonPlayMediaType.PODCAST)
 
     @intent_handler("news.intent")
     def play_news(self, message):
-        LOG.debug("News BetterCPS match")
+        LOG.debug("News OVOSCommonPlay match")
         self._play(message, CommonPlayMediaType.NEWS)
 
     @intent_handler("tv.intent")
     def play_tv(self, message):
-        LOG.debug("TV BetterCPS match")
+        LOG.debug("TV OVOSCommonPlay match")
         self._play(message, CommonPlayMediaType.TV)
 
     @intent_handler("movie.intent")
     def play_movie(self, message):
-        LOG.debug("Movie BetterCPS match")
+        LOG.debug("Movie OVOSCommonPlay match")
         self._play(message, CommonPlayMediaType.MOVIE)
 
     @intent_handler("short_movie.intent")
     def play_short_movie(self, message):
-        LOG.debug("Short Movie BetterCPS match")
+        LOG.debug("Short Movie OVOSCommonPlay match")
         try:
             self._play(message, CommonPlayMediaType.SHORT_FILM)
         except:
@@ -135,7 +135,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
 
     @intent_handler("silent_movie.intent")
     def play_silent_movie(self, message):
-        LOG.debug("Silent Movie BetterCPS match")
+        LOG.debug("Silent Movie OVOSCommonPlay match")
         try:
             self._play(message, CommonPlayMediaType.SILENT_MOVIE)
         except:
@@ -143,7 +143,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
 
     @intent_handler("bw_movie.intent")
     def play_bw_movie(self, message):
-        LOG.debug("Black&White Movie BetterCPS match")
+        LOG.debug("Black&White Movie OVOSCommonPlay match")
         try:
             self._play(message, CommonPlayMediaType.BLACK_WHITE_MOVIE)
         except:
@@ -151,22 +151,22 @@ class BetterPlaybackControlSkill(OVOSSkill):
 
     @intent_handler("movietrailer.intent")
     def play_trailer(self, message):
-        LOG.debug("Trailer BetterCPS match")
+        LOG.debug("Trailer OVOSCommonPlay match")
         self._play(message, CommonPlayMediaType.TRAILER)
 
     @intent_handler("porn.intent")
     def play_adult(self, message):
-        LOG.debug("Porn BetterCPS match")
+        LOG.debug("Porn OVOSCommonPlay match")
         self._play(message, CommonPlayMediaType.ADULT)
 
     @intent_handler("comic.intent")
     def play_comic(self, message):
-        LOG.debug("ComicBook BetterCPS match")
+        LOG.debug("ComicBook OVOSCommonPlay match")
         self._play(message, CommonPlayMediaType.VISUAL_STORY)
 
     @intent_handler("documentaries.intent")
     def play_documentaries(self, message):
-        LOG.debug("Documentaries BetterCPS match")
+        LOG.debug("Documentaries OVOSCommonPlay match")
         self._play(message, CommonPlayMediaType.DOCUMENTARY)
 
     # playback control intents
@@ -268,7 +268,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
             # TODO: Ask user to pick between ties or do it automagically
         else:
             selected = best
-        LOG.debug(f"BetterCPS selected: {selected['skill_id']} - {selected['match_confidence']}")
+        LOG.debug(f"OVOSCommonPlay selected: {selected['skill_id']} - {selected['match_confidence']}")
         return selected
 
     # messagebus request to play track
