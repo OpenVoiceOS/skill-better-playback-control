@@ -18,7 +18,6 @@ from ovos_workshop.frameworks.playback.playlists import Playlist
 
 
 class BetterPlaybackControlSkill(OVOSSkill):
-
     def initialize(self):
         # TODO skill settings for these values
         self.gui_only = False  # not recommended
@@ -64,14 +63,6 @@ class BetterPlaybackControlSkill(OVOSSkill):
         LOG.debug("Video OVOSCommonPlay match")
         self._play(message, CommonPlayMediaType.VIDEO)
 
-    @intent_handler("audio.intent")
-    def play_audio(self, message):
-        LOG.debug("Audio OVOSCommonPlay match")
-        try:
-            self._play(message, CommonPlayMediaType.AUDIO)
-        except:
-            self._play(message, CommonPlayMediaType.MUSIC)
-
     @intent_handler("audiobook.intent")
     def play_audiobook(self, message):
         LOG.debug("AudioBook OVOSCommonPlay match")
@@ -80,20 +71,12 @@ class BetterPlaybackControlSkill(OVOSSkill):
     @intent_handler("radio_drama.intent")
     def play_radio_drama(self, message):
         LOG.debug("Radio Theatre OVOSCommonPlay match")
-        # TODO new type in next ovos_utils alpha release
-        try:
-            self._play(message, CommonPlayMediaType.RADIO_THEATRE)
-        except:
-            self._play(message, CommonPlayMediaType.AUDIOBOOK)
+        self._play(message, CommonPlayMediaType.RADIO_THEATRE)
 
     @intent_handler("behind_scenes.intent")
     def play_behind_scenes(self, message):
         LOG.debug("Behind the Scenes OVOSCommonPlay match")
-        # TODO new type in next ovos_utils alpha release
-        try:
-            self._play(message, CommonPlayMediaType.BEHIND_THE_SCENES)
-        except:
-            self._play(message, CommonPlayMediaType.VIDEO)
+        self._play(message, CommonPlayMediaType.BEHIND_THE_SCENES)
 
     @intent_handler("game.intent")
     def play_game(self, message):
@@ -128,26 +111,17 @@ class BetterPlaybackControlSkill(OVOSSkill):
     @intent_handler("short_movie.intent")
     def play_short_movie(self, message):
         LOG.debug("Short Movie OVOSCommonPlay match")
-        try:
-            self._play(message, CommonPlayMediaType.SHORT_FILM)
-        except:
-            self._play(message, CommonPlayMediaType.MOVIE)
+        self._play(message, CommonPlayMediaType.SHORT_FILM)
 
     @intent_handler("silent_movie.intent")
     def play_silent_movie(self, message):
         LOG.debug("Silent Movie OVOSCommonPlay match")
-        try:
-            self._play(message, CommonPlayMediaType.SILENT_MOVIE)
-        except:
-            self._play(message, CommonPlayMediaType.MOVIE)
+        self._play(message, CommonPlayMediaType.SILENT_MOVIE)
 
     @intent_handler("bw_movie.intent")
     def play_bw_movie(self, message):
         LOG.debug("Black&White Movie OVOSCommonPlay match")
-        try:
-            self._play(message, CommonPlayMediaType.BLACK_WHITE_MOVIE)
-        except:
-            self._play(message, CommonPlayMediaType.MOVIE)
+        self._play(message, CommonPlayMediaType.BLACK_WHITE_MOVIE)
 
     @intent_handler("movietrailer.intent")
     def play_trailer(self, message):
@@ -218,16 +192,31 @@ class BetterPlaybackControlSkill(OVOSSkill):
         # reset common play playlist
         self.common_play.playlist = Playlist()
 
+        # check if user said "play XXX audio only/no video"
+        audio_only = False
+        if self.voc_match(phrase, "audio_only"):
+            audio_only = True
+            # dont include "audio only" in search query
+            phrase = self.remove_voc(phrase, "audio_only")
+
         # Now we place a query on the messsagebus for anyone who wants to
         # attempt to service a 'play.request' message.
         results = []
         for r in self.common_play.search(phrase, media_type=media_type):
             results += r["results"]
 
-        # filter VIDEO only results if VIDEO not connected
-        gui_connected = is_gui_connected(self.bus)
-        if self.audio_only or not gui_connected:
-            results = [r for r in results if r["playback"] != CommonPlayPlaybackType.VIDEO]
+        # check if user said "play XXX audio only"
+        if audio_only:
+            LOG.info("audio only requested, forcing audio playback")
+            for idx, r in enumerate(results):
+                # force streams to be played audio only
+                if r["playback"] != CommonPlayPlaybackType.AUDIO:
+                    results[idx]["playback"] = CommonPlayPlaybackType.AUDIO
+        # filter video results if GUI not connected
+        elif self.audio_only or not is_gui_connected(self.bus):
+            LOG.info("unable to use GUI, filtering non-audio results")
+            results = [r for r in results
+                       if r["playback"] == CommonPlayPlaybackType.AUDIO]
 
         if not results:
             self.speak_dialog("cant.play",
@@ -237,7 +226,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
 
         best = self.select_best(results)
         self.common_play.play_media(best, results)
-        self.enclosure.mouth_reset()
+        self.enclosure.mouth_reset() # TODO display music icon in mk1
         self.set_context("Playing")
 
     def select_best(self, results):
@@ -273,6 +262,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
 
     # messagebus request to play track
     def handle_play_request(self, message):
+        LOG.debug("Received external OVOS playback request")
         self.set_context("Playing")
         if message.data.get("tracks"):
             # backwards compat / old style
