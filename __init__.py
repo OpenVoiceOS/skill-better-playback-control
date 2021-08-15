@@ -10,7 +10,7 @@ from ovos_workshop.frameworks.playback import CommonPlayMediaType, CommonPlayPla
 from ovos_workshop.frameworks.playback.youtube import is_youtube, \
     get_youtube_metadata, \
     get_youtube_video_stream
-from ovos_utils.gui import is_gui_connected
+from ovos_utils.gui import can_use_gui
 from ovos_utils.json_helper import merge_dict
 from ovos_utils.log import LOG
 from pprint import pprint
@@ -25,6 +25,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
         self.use_mycroft_gui = False  # send all playback to the plugin
         self.compatibility_mode = True
         self.media_type_fallback = True # if True send a Generic type query
+        self.min_score = 30  # ignore matches with conf lower than this
         # when specific query fails, eg "play the News" -> news media not
         # found -> check other skills (youtube/iptv....)
         if self.use_mycroft_gui:
@@ -193,7 +194,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
         self.common_play.playlist = Playlist()
 
         # check if user said "play XXX audio only/no video"
-        audio_only = False
+        audio_only = self.audio_only
         if self.voc_match(phrase, "audio_only"):
             audio_only = True
             # dont include "audio only" in search query
@@ -205,15 +206,18 @@ class BetterPlaybackControlSkill(OVOSSkill):
         for r in self.common_play.search(phrase, media_type=media_type):
             results += r["results"]
 
+        # ignore very low score matches
+        results = [r for r in results
+                   if r["match_confidence"] >= self.min_score]
+
         # check if user said "play XXX audio only"
         if audio_only:
             LOG.info("audio only requested, forcing audio playback")
             for idx, r in enumerate(results):
                 # force streams to be played audio only
-                if r["playback"] != CommonPlayPlaybackType.AUDIO:
-                    results[idx]["playback"] = CommonPlayPlaybackType.AUDIO
+                results[idx]["playback"] = CommonPlayPlaybackType.AUDIO
         # filter video results if GUI not connected
-        elif self.audio_only or not is_gui_connected(self.bus):
+        elif not can_use_gui(self.bus):
             LOG.info("unable to use GUI, filtering non-audio results")
             results = [r for r in results
                        if r["playback"] == CommonPlayPlaybackType.AUDIO]
@@ -225,7 +229,9 @@ class BetterPlaybackControlSkill(OVOSSkill):
             return
 
         best = self.select_best(results)
+
         self.common_play.play_media(best, results)
+
         self.enclosure.mouth_reset() # TODO display music icon in mk1
         self.set_context("Playing")
 
