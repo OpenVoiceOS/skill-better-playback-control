@@ -141,9 +141,10 @@ class BetterPlaybackControlSkill(OVOSSkill):
         if self.should_resume(phrase):
             self.common_play.resume()
             return
+        self.common_play.stop()
+        self.speak_dialog("just.one.moment")
 
-        self.speak_dialog("just.one.moment", wait=True)
-
+        # TODO searching UI page (?)
         self.enclosure.mouth_think()
 
         # reset common play playlist
@@ -164,6 +165,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
         # Now we place a query on the messsagebus for anyone who wants to
         # attempt to service a 'play.request' message.
         results = []
+        phrase = phrase or utterance
         for r in self.common_play.search(phrase, media_type=media_type):
             results += r["results"]
 
@@ -173,13 +175,15 @@ class BetterPlaybackControlSkill(OVOSSkill):
 
         # check if user said "play XXX audio only"
         if audio_only:
-            LOG.info("audio only requested, forcing audio playback")
+            LOG.info("audio only requested, forcing audio playback "
+                     "unconditionally")
             for idx, r in enumerate(results):
                 # force streams to be played audio only
                 results[idx]["playback"] = CommonPlayPlaybackType.AUDIO
         # filter video results if GUI not connected
         elif not can_use_gui(self.bus):
             LOG.info("unable to use GUI, filtering non-audio results")
+            # filter video only streams
             results = [r for r in results
                        if r["playback"] == CommonPlayPlaybackType.AUDIO]
 
