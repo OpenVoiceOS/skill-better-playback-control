@@ -66,7 +66,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
         self.add_event("ovos.common_play.play", self.handle_play_request)
         self.register_media_intents()
 
-        # TODO deezer creds
+        # TODO deezer creds from deezer skill
         email = "gavit58925@5sword.com"
         pswd = "jarbas666"
         self.deezer = deezeridu.Deezer(email=email, password=pswd)
