@@ -12,6 +12,11 @@ from ovos_workshop.frameworks.playback import CommonPlayMediaType, \
 from ovos_workshop.frameworks.playback.playlists import Playlist
 from ovos_workshop.skills import OVOSSkill
 from padacioso import IntentContainer
+from ovos_workshop.frameworks.playback.youtube import is_youtube, \
+    get_youtube_audio_stream, get_youtube_video_stream
+from ovos_workshop.frameworks.playback.deezer import is_deezer,\
+    get_deezer_audio_stream
+import deezeridu
 
 
 class BetterPlaybackControlSkill(OVOSSkill):
@@ -60,6 +65,12 @@ class BetterPlaybackControlSkill(OVOSSkill):
         self.media_intents = IntentContainer()
         self.add_event("ovos.common_play.play", self.handle_play_request)
         self.register_media_intents()
+
+        # TODO deezer creds
+        email = "gavit58925@5sword.com"
+        pswd = "jarbas666"
+        self.deezer = deezeridu.Deezer(email=email, password=pswd)
+        self.common_play.bind_deezer(self.deezer)
 
     def register_media_intents(self):
         """
@@ -172,6 +183,11 @@ class BetterPlaybackControlSkill(OVOSSkill):
         # ignore very low score matches
         results = [r for r in results
                    if r["match_confidence"] >= self.min_score]
+
+        # filter deezer results if not logged in
+        if not self.deezer:
+            results = [r for r in results
+                       if not is_deezer(r["uri"])]
 
         # check if user said "play XXX audio only"
         if audio_only:
