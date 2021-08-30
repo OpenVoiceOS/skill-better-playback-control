@@ -45,9 +45,9 @@ class BetterPlaybackControlSkill(OVOSSkill):
         self.use_mycroft_gui = False  # send all playback to the plugin
         self.compatibility_mode = True
         self.media_type_fallback = True  # if True send a Generic type query
-        self.min_score = 30  # ignore matches with conf lower than this
         # when specific query fails, eg "play the News" -> news media not
         # found -> check other skills (youtube/iptv....)
+        self.min_score = 30  # ignore matches with conf lower than this
         if self.use_mycroft_gui:
             audio = AudioPlayerType.MYCROFT
             video = VideoPlayerType.MYCROFT
