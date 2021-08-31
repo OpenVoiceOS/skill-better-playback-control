@@ -12,8 +12,6 @@ from ovos_workshop.frameworks.playback import CommonPlayMediaType, \
 from ovos_workshop.frameworks.playback.playlists import Playlist
 from ovos_workshop.skills import OVOSSkill
 from padacioso import IntentContainer
-from ovos_workshop.frameworks.playback.youtube import is_youtube, \
-    get_youtube_audio_stream, get_youtube_video_stream
 
 
 class BetterPlaybackControlSkill(OVOSSkill):
