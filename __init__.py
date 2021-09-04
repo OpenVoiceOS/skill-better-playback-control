@@ -8,7 +8,7 @@ from ovos_utils.log import LOG
 from ovos_workshop.frameworks.playback import CommonPlayMediaType, \
     CommonPlayPlaybackType, \
     OVOSCommonPlaybackInterface, \
-    CommonPlayStatus, VideoPlayerType, AudioPlayerType
+    CommonPlayStatus
 from ovos_workshop.frameworks.playback.playlists import Playlist
 from ovos_workshop.skills import OVOSSkill
 from padacioso import IntentContainer
@@ -40,22 +40,16 @@ class BetterPlaybackControlSkill(OVOSSkill):
         # TODO skill settings for these values
         self.gui_only = False  # not recommended
         self.audio_only = False
-        self.use_mycroft_gui = False  # send all playback to the plugin
         self.compatibility_mode = True
         self.media_type_fallback = True  # if True send a Generic type query
         # when specific query fails, eg "play the News" -> news media not
         # found -> check other skills (youtube/iptv....)
         self.min_score = 30  # ignore matches with conf lower than this
-        if self.use_mycroft_gui:
-            audio = AudioPlayerType.MYCROFT
-            video = VideoPlayerType.MYCROFT
-        else:
-            audio = AudioPlayerType.SIMPLE
-            video = VideoPlayerType.SIMPLE
+
         self.common_play = OVOSCommonPlaybackInterface(
             bus=self.bus, backwards_compatibility=self.compatibility_mode,
-            media_fallback=self.media_type_fallback, audio_player=audio,
-            video_player=video, max_timeout=7, min_timeout=3)
+            media_fallback=self.media_type_fallback,
+            max_timeout=15, min_timeout=5)
 
         self.media_intents = IntentContainer()
         self.add_event("ovos.common_play.play", self.handle_play_request)
@@ -141,10 +135,11 @@ class BetterPlaybackControlSkill(OVOSSkill):
         if self.should_resume(phrase):
             self.common_play.resume()
             return
-        self.common_play.stop()
-        self.speak_dialog("just.one.moment")
 
-        # TODO searching UI page (?)
+        self.common_play.stop()
+        self.common_play.gui.release()
+        self.speak_dialog("just.one.moment", wait=True)
+
         self.enclosure.mouth_think()
 
         # reset common play playlist
@@ -194,7 +189,6 @@ class BetterPlaybackControlSkill(OVOSSkill):
             return
 
         best = self.select_best(results)
-
         self.common_play.play_media(best, results)
 
         self.enclosure.mouth_reset()  # TODO display music icon in mk1
