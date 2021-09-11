@@ -120,7 +120,14 @@ class BetterPlaybackControlSkill(OVOSSkill):
                     .one_of('PlayResume', 'Resume').require("Playing"))
     def handle_resume(self, message):
         """Resume playback if paused"""
-        self.common_play.resume()
+        if self.common_play.now_playing and \
+                self.common_play.playback_status == CommonPlayStatus.PAUSED:
+            self.common_play.resume()
+        else:
+            query = self.get_response("play.what")
+            if query:
+                message["utterance"] = query
+                self.handle_play_intent(message)
 
     # playback selection
     @intent_handler("play.intent")
@@ -135,10 +142,16 @@ class BetterPlaybackControlSkill(OVOSSkill):
         if self.should_resume(phrase):
             self.common_play.resume()
             return
+        if not phrase:
+            phrase = self.get_response("play.what")
+            if not phrase:
+                # TODO some dialog ?
+                self.stop()
+                return
 
         self.common_play.stop()
         self.common_play.gui.release()
-        self.speak_dialog("just.one.moment", wait=True)
+        self.speak_dialog("just.one.moment")
 
         self.enclosure.mouth_think()
 
@@ -147,12 +160,17 @@ class BetterPlaybackControlSkill(OVOSSkill):
 
         # check if user said "play XXX audio only/no video"
         audio_only = self.audio_only
+        video_only = False
         if self.voc_match(phrase, "audio_only"):
             audio_only = True
             # dont include "audio only" in search query
             phrase = self.remove_voc(phrase, "audio_only")
             # dont include "audio only" in media type classification
             utterance = self.remove_voc(utterance, "audio_only").strip()
+        elif self.voc_match(phrase, "video_only"):
+            video_only = True
+            # dont include "video only" in search query
+            phrase = self.remove_voc(phrase, "video_only")
 
         # classify the query media type
         media_type = self.classify_media(utterance)
@@ -175,6 +193,17 @@ class BetterPlaybackControlSkill(OVOSSkill):
             for idx, r in enumerate(results):
                 # force streams to be played audio only
                 results[idx]["playback"] = CommonPlayPlaybackType.AUDIO
+        # check if user said "play XXX video only"
+        elif video_only:
+            LOG.info("video only requested, filtering non-video results")
+            for idx, r in enumerate(results):
+                if results[idx]["media_type"] == CommonPlayMediaType.VIDEO:
+                    # force streams to be played in video mode, even if
+                    # audio playback requested
+                    results[idx]["playback"] = CommonPlayPlaybackType.VIDEO
+            # filter audio only streams
+            results = [r for r in results
+                       if r["playback"] == CommonPlayPlaybackType.VIDEO]
         # filter video results if GUI not connected
         elif not can_use_gui(self.bus):
             LOG.info("unable to use GUI, filtering non-audio results")
