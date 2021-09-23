@@ -5,54 +5,57 @@ from adapt.intent import IntentBuilder
 from mycroft.skills.core import intent_handler
 from ovos_utils.gui import can_use_gui
 from ovos_utils.log import LOG
-from ovos_workshop.frameworks.playback import CommonPlayMediaType, \
-    CommonPlayPlaybackType, \
-    OVOSCommonPlaybackInterface, \
-    CommonPlayStatus
-from ovos_workshop.frameworks.playback.playlists import Playlist
+from ovos_workshop.frameworks.playback import MediaType, \
+    PlaybackType, OVOSCommonPlaybackInterface, CommonPlaySettings, PlayerState
 from ovos_workshop.skills import OVOSSkill
 from padacioso import IntentContainer
 
 
 class BetterPlaybackControlSkill(OVOSSkill):
     intent2media = {
-        "music": CommonPlayMediaType.MUSIC,
-        "video": CommonPlayMediaType.VIDEO,
-        "audiobook": CommonPlayMediaType.AUDIOBOOK,
-        "radio": CommonPlayMediaType.RADIO,
-        "radio_drama": CommonPlayMediaType.RADIO_THEATRE,
-        "game": CommonPlayMediaType.GAME,
-        "tv": CommonPlayMediaType.TV,
-        "podcast": CommonPlayMediaType.PODCAST,
-        "news": CommonPlayMediaType.NEWS,
-        "movie": CommonPlayMediaType.MOVIE,
-        "short_movie": CommonPlayMediaType.SHORT_FILM,
-        "silent_movie": CommonPlayMediaType.SILENT_MOVIE,
-        "bw_movie": CommonPlayMediaType.BLACK_WHITE_MOVIE,
-        "documentaries": CommonPlayMediaType.DOCUMENTARY,
-        "comic": CommonPlayMediaType.VISUAL_STORY,
-        "movietrailer": CommonPlayMediaType.TRAILER,
-        "behind_scenes": CommonPlayMediaType.BEHIND_THE_SCENES,
-        "porn": CommonPlayMediaType.ADULT
+        "music": MediaType.MUSIC,
+        "video": MediaType.VIDEO,
+        "audiobook": MediaType.AUDIOBOOK,
+        "radio": MediaType.RADIO,
+        "radio_drama": MediaType.RADIO_THEATRE,
+        "game": MediaType.GAME,
+        "tv": MediaType.TV,
+        "podcast": MediaType.PODCAST,
+        "news": MediaType.NEWS,
+        "movie": MediaType.MOVIE,
+        "short_movie": MediaType.SHORT_FILM,
+        "silent_movie": MediaType.SILENT_MOVIE,
+        "bw_movie": MediaType.BLACK_WHITE_MOVIE,
+        "documentaries": MediaType.DOCUMENTARY,
+        "comic": MediaType.VISUAL_STORY,
+        "movietrailer": MediaType.TRAILER,
+        "behind_scenes": MediaType.BEHIND_THE_SCENES,
+        "porn": MediaType.ADULT
     }
 
     def initialize(self):
         # TODO skill settings for these values
-        self.gui_only = False  # not recommended
-        self.audio_only = False
-        self.compatibility_mode = True
-        self.media_type_fallback = True  # if True send a Generic type query
-        # when specific query fails, eg "play the News" -> news media not
-        # found -> check other skills (youtube/iptv....)
-        self.min_score = 30  # ignore matches with conf lower than this
-
+        self.settings["gui_only"] = False
+        self.settings["audio_only"] = False
+        self.settings["force_audioservice"] = False
+        self.settings["backwards_compatibility"] = True
+        self.settings["media_fallback"] = True
+        self.settings["auto_play"] = True
+        self.settings["max_timeout"] = 15
+        self.settings["min_timeout"] = 8
+        self.settings["min_score"] = 30
+        cps_settings = CommonPlaySettings(
+            backwards_compatibility=self.settings["backwards_compatibility"],
+            media_fallback=self.settings["media_fallback"],
+            max_timeout=self.settings["max_timeout"],
+            min_timeout=self.settings["min_timeout"],
+            autoplay=self.settings["auto_play"],
+            force_audioservice=self.settings["force_audioservice"]
+        )
         self.common_play = OVOSCommonPlaybackInterface(
-            bus=self.bus, backwards_compatibility=self.compatibility_mode,
-            media_fallback=self.media_type_fallback,
-            max_timeout=15, min_timeout=5)
-
+            settings=cps_settings, bus=self.bus
+        )
         self.media_intents = IntentContainer()
-        self.add_event("ovos.common_play.play", self.handle_play_request)
         self.register_media_intents()
 
     def register_media_intents(self):
@@ -74,9 +77,9 @@ class BetterPlaybackControlSkill(OVOSSkill):
 
     def classify_media(self, query):
         """ this method uses a strict regex based parser to determine what
-        media type is being requested, this helps in the search process
+        media type is being requested, this helps in the media process
         - only skills that support media type are considered
-        - if no matches a generic search is performed
+        - if no matches a generic media is performed
         - some skills only answer for specific media types, usually to avoid over matching
         - skills may use media type to calc confidence
         - skills may ignore media type
@@ -84,6 +87,11 @@ class BetterPlaybackControlSkill(OVOSSkill):
         NOTE: uses the same format as mycroft .intent files, language
         support is handled the same way
         """
+        if self.voc_match(query, "audio_only"):
+            query = self.remove_voc(query, "audio_only").strip()
+        elif self.voc_match(query, "video_only"):
+            query = self.remove_voc(query, "video_only")
+
         pred = self.media_intents.calc_intent(query)
         LOG.info(f"OVOSCommonPlay MediaType prediction: {pred}")
         LOG.debug(f"     utterance: {query}")
@@ -91,7 +99,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
         if intent in self.intent2media:
             return self.intent2media[intent]
         LOG.debug("Generic OVOSCommonPlay query")
-        return CommonPlayMediaType.GENERIC
+        return MediaType.GENERIC
 
     def stop(self, message=None):
         # will stop any playback in GUI and AudioService
@@ -120,8 +128,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
                     .one_of('PlayResume', 'Resume').require("Playing"))
     def handle_resume(self, message):
         """Resume playback if paused"""
-        if self.common_play.now_playing and \
-                self.common_play.playback_status == CommonPlayStatus.PAUSED:
+        if self.common_play.player_state == PlayerState.PAUSED:
             self.common_play.resume()
         else:
             query = self.get_response("play.what")
@@ -133,7 +140,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
     @intent_handler("play.intent")
     def handle_play_intent(self, message):
         utterance = message.data["utterance"]
-        phrase = message.data.get("query", "")
+        phrase = message.data.get("query", "") or utterance
         num = message.data.get("number", "")
         if num:
             phrase += " " + num
@@ -149,17 +156,30 @@ class BetterPlaybackControlSkill(OVOSSkill):
                 self.stop()
                 return
 
-        self.common_play.stop()
-        self.common_play.gui.release()
+        self.common_play.reset()
+
         self.speak_dialog("just.one.moment")
 
         self.enclosure.mouth_think()
 
-        # reset common play playlist
-        self.common_play.playlist = Playlist()
+        # classify the query media type
+        media_type = self.classify_media(utterance)
+        # search common play skills
+        results = self.search(phrase, utterance, media_type)
 
+        if not results:
+            self.speak_dialog("cant.play",
+                              data={"phrase": phrase,
+                                    "media_type": media_type})
+        else:
+            best = self.select_best(results)
+            self.common_play.play_media(best, results)
+            self.enclosure.mouth_reset()  # TODO display music icon in mk1
+            self.set_context("Playing")
+
+    def search(self, phrase, utterance, media_type):
         # check if user said "play XXX audio only/no video"
-        audio_only = self.audio_only
+        audio_only = False
         video_only = False
         if self.voc_match(phrase, "audio_only"):
             audio_only = True
@@ -172,9 +192,6 @@ class BetterPlaybackControlSkill(OVOSSkill):
             # dont include "video only" in search query
             phrase = self.remove_voc(phrase, "video_only")
 
-        # classify the query media type
-        media_type = self.classify_media(utterance)
-
         # Now we place a query on the messsagebus for anyone who wants to
         # attempt to service a 'play.request' message.
         results = []
@@ -184,7 +201,7 @@ class BetterPlaybackControlSkill(OVOSSkill):
 
         # ignore very low score matches
         results = [r for r in results
-                   if r["match_confidence"] >= self.min_score]
+                   if r["match_confidence"] >= self.settings["min_score"]]
 
         # check if user said "play XXX audio only"
         if audio_only:
@@ -192,39 +209,28 @@ class BetterPlaybackControlSkill(OVOSSkill):
                      "unconditionally")
             for idx, r in enumerate(results):
                 # force streams to be played audio only
-                results[idx]["playback"] = CommonPlayPlaybackType.AUDIO
+                results[idx]["playback"] = PlaybackType.AUDIO
         # check if user said "play XXX video only"
         elif video_only:
             LOG.info("video only requested, filtering non-video results")
             for idx, r in enumerate(results):
-                if results[idx]["media_type"] == CommonPlayMediaType.VIDEO:
+                if results[idx]["media_type"] == MediaType.VIDEO:
                     # force streams to be played in video mode, even if
                     # audio playback requested
-                    results[idx]["playback"] = CommonPlayPlaybackType.VIDEO
+                    results[idx]["playback"] = PlaybackType.VIDEO
             # filter audio only streams
             results = [r for r in results
-                       if r["playback"] == CommonPlayPlaybackType.VIDEO]
+                       if r["playback"] == PlaybackType.VIDEO]
         # filter video results if GUI not connected
         elif not can_use_gui(self.bus):
             LOG.info("unable to use GUI, filtering non-audio results")
             # filter video only streams
             results = [r for r in results
-                       if r["playback"] == CommonPlayPlaybackType.AUDIO]
-
-        if not results:
-            self.speak_dialog("cant.play",
-                              data={"phrase": phrase,
-                                    "media_type": media_type})
-            return
-
-        best = self.select_best(results)
-        self.common_play.play_media(best, results)
-
-        self.enclosure.mouth_reset()  # TODO display music icon in mk1
-        self.set_context("Playing")
+                       if r["playback"] == PlaybackType.AUDIO]
+        return results
 
     def should_resume(self, phrase):
-        if self.common_play.playback_status == CommonPlayStatus.PAUSED:
+        if self.common_play.player_state == PlayerState.PAUSED:
             if not phrase.strip() or \
                     self.voc_match(phrase, "Resume", exact=True) or \
                     self.voc_match(phrase, "Play", exact=True):
@@ -248,12 +254,12 @@ class BetterPlaybackControlSkill(OVOSSkill):
             # select randomly
             selected = random.choice(ties)
 
-            if self.gui_only:
+            if self.settings["gui_only"]:
                 # select only from VIDEO results if preference is set
                 # WARNING this can effectively make it so that the same
                 # skill is always selected
                 gui_results = [r for r in ties if r["playback"] ==
-                               CommonPlayPlaybackType.VIDEO]
+                               PlaybackType.VIDEO]
                 if len(gui_results):
                     selected = random.choice(gui_results)
 
@@ -263,20 +269,6 @@ class BetterPlaybackControlSkill(OVOSSkill):
         LOG.debug(
             f"OVOSCommonPlay selected: {selected['skill_id']} - {selected['match_confidence']}")
         return selected
-
-    # messagebus request to play track
-    def handle_play_request(self, message):
-        LOG.debug("Received external OVOS playback request")
-        self.set_context("Playing")
-        if message.data.get("tracks"):
-            # backwards compat / old style
-            playlist = disambiguation = message.data["tracks"]
-            media = playlist[0]
-        else:
-            media = message.data.get("media")
-            playlist = message.data.get("playlist") or [media]
-            disambiguation = message.data.get("disambiguation") or [media]
-        self.common_play.play_media(media, disambiguation, playlist)
 
     def shutdown(self):
         self.common_play.shutdown()
