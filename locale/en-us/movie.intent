@@ -1,3 +1,0 @@
-(play|start) (movie|movies|film) {{query}}
-(play|start) {{query}} (movie|movies|film|films)
-(play|start) (a movie|movie|movies|film|films)
