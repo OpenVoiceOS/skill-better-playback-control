@@ -19,8 +19,7 @@ setup(
     package_dir={"ovos_skill_common_play": ""},
     packages=['ovos_skill_common_play'],
     include_package_data=True,
-    install_requires=["ovos-plugin-manager>=0.0.2",
-                      "ovos_plugin_common_play>=0.0.1a2"],
+    install_requires=["ovos_plugin_common_play>=0.0.1a2"],
     keywords='ovos skill plugin',
     entry_points={'ovos.plugin.skill': PLUGIN_ENTRY_POINT}
 )
